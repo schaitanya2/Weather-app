@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    
+    <div class="container">
+        <h2>Weather App</h2>
+        <button onclick="getWeather()">Get Weather</button>
+        <pre id="output">Click "Get Weather" to view your live weather info.</pre>
+    </div>
+
+    <script>
+        function getWeather() {
+            const output = document.getElementById("output");
+            output.textContent = " Detecting your location...";
+
+            // Step 1: Get user's current location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(success, error);
+            } else {
+                output.textContent = " Geolocation not supported in your browser.";
+            }
+
+            // Step 2: If location is found
+            function success(position) {
+                let latitude = position.coords.latitude;
+                let longitude = position.coords.longitude;
+
+                // Step 3: Fetch weather
+                let url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`;
+
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        let temp = data.current_weather.temperature;
+                        let units = data.current_weather_units.temperature;
+                        let windspeed = data.current_weather.windspeed;
+                        let windspeed_units = data.current_weather_units.windspeed;
+
+                        // Step 4: Get city name using reverse geocoding
+                        let geoUrl = `https://geocode.maps.co/reverse?lat=${latitude}&lon=${longitude}`;
+                        fetch(geoUrl)
+                            .then(res => res.json())
+                            .then(locationData => {
+                                let city = locationData.address.city ||
+                                           locationData.address.town ||
+                                           locationData.address.village ||
+                                           "Unknown Location";
+
+                                output.textContent =
+                                    " Location: " + city + "\n" +
+                                    " Temperature: " + temp + " " + units + "\n" +
+                                    " Windspeed: " + windspeed + " " + windspeed_units;
+                            })
+                            .catch(() => {
+                                output.textContent =
+                                    " Temperature: " + temp + " " + units + "\n" +
+                                    " Windspeed: " + windspeed + " " + windspeed_units +
+                                    "\n (Unable to get city name)";
+                            });
+                    })
+                    .catch(() => {
+                        output.textContent = " Error fetching weather data.";
+                    });
+            }
+
+            // Step 5: If user denies or error occurs
+            function error() {
+                output.textContent = " Unable to access your location. Please allow location access.";
+            }
+        }
+    </script>
+</body>
+</html>
